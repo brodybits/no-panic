@@ -3,6 +3,13 @@ mod compiletest;
 
 #[rustversion::attr(not(since(1.67.0)), ignore)]
 #[test]
+fn runs() {
+    let t = trybuild::TestCases::new();
+    t.pass("tests/runs/*.rs");
+}
+
+#[rustversion::attr(not(since(1.67.0)), ignore)]
+#[test]
 fn ui() {
     let t = trybuild::TestCases::new();
     t.compile_fail("tests/ui/*.rs");
