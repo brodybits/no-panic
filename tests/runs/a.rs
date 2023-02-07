@@ -1,17 +1,18 @@
-use no_panic::no_panic;
+//use no_panic::no_panic;
 
-use std::thread;
+use async_std::task;
 
-async fn a() {
-    thread::spawn(b);
+//#[no_panic]
+fn a() {
+    task::block_on(b());
 }
 
 async fn b() {
-    thread::spawn(c);
+    assert_eq!(c().await, "-");
 }
 
-async fn c() {
-    panic!("xxx");
+async fn c() -> &'static str {
+    return "abc";
 }
 
 fn main() {
