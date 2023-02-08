@@ -219,40 +219,6 @@ fn expand_no_panic(mut function: ItemFn) -> TokenStream2 {
 
     let __f_call = if is_async { quote!(__f().await) } else { quote!(__f()) };;
 
-    if is_async {
-
-    function.block = Box::new(parse_quote!({
-        struct __NoPanic;
-        extern "C" {
-            #[link_name = #message]
-            fn trigger() -> !;
-        }
-        impl core::ops::Drop for __NoPanic {
-            fn drop(&mut self) {
-                unsafe {
-                    trigger();
-                }
-            }
-        }
-        let __guard = __NoPanic;
-        // ref - THANKS:
-        // - https://www.reddit.com/r/rust/comments/w6sgqu/comment/ihgtglm/
-        // - https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=3cd70b7a6244f6aa1a5de4cf7a2782f7
-        // - https://www.reddit.com/r/rust/comments/w6sgqu/blog_asynchronous_closures_in_rust_box_and_pin/
-        // - https://www.bitfalter.com/async-closures
-        let mut __f = #sync_move || #async_move #ret {
-            #move_self
-            #(
-                let #arg_pat = #arg_val;
-            )*
-            #(#stmts)*
-        };
-        let __result = #__f_call;
-        core::mem::forget(__guard);
-        __result
-    }));
-
-    } else {
     function.block = Box::new(parse_quote!({
         struct __NoPanic;
         extern "C" {
@@ -278,7 +244,6 @@ fn expand_no_panic(mut function: ItemFn) -> TokenStream2 {
         core::mem::forget(__guard);
         __result
     }));
-    }
 
     quote!(#function)
 }
