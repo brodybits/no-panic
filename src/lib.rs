@@ -186,6 +186,8 @@ fn expand_no_panic(mut function: ItemFn) -> TokenStream2 {
         }
     }
 
+    let is_async = function.sig.asyncness.is_some();
+
     let has_inline = function
         .attrs
         .iter()
@@ -204,7 +206,7 @@ fn expand_no_panic(mut function: ItemFn) -> TokenStream2 {
         "\n\nERROR[no-panic]: detected panic in function `{}`\n",
         function.sig.ident,
     );
-    if function.sig.asyncness.is_some() {
+    if is_async {
 
     function.block = Box::new(parse_quote!({
         struct __NoPanic;
@@ -225,7 +227,7 @@ fn expand_no_panic(mut function: ItemFn) -> TokenStream2 {
         // - https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=3cd70b7a6244f6aa1a5de4cf7a2782f7
         // - https://www.reddit.com/r/rust/comments/w6sgqu/blog_asynchronous_closures_in_rust_box_and_pin/
         // - https://www.bitfalter.com/async-closures
-        let __f = || async move {
+        let mut __f = || async move {
             #move_self
             #(
                 let #arg_pat = #arg_val;
@@ -252,13 +254,14 @@ fn expand_no_panic(mut function: ItemFn) -> TokenStream2 {
             }
         }
         let __guard = __NoPanic;
-        let __result = (move || #ret {
+        let mut __f = move || #ret {
             #move_self
             #(
                 let #arg_pat = #arg_val;
             )*
             #(#stmts)*
-        })();
+        };
+        let __result = __f();
         core::mem::forget(__guard);
         __result
     }));
