@@ -220,39 +220,21 @@ fn expand_no_panic(mut function: ItemFn) -> TokenStream2 {
             }
         }
         let __guard = __NoPanic;
-        //let __result = (async || #ret {
-        //    #move_self
-        //    #(
-        //        let #arg_pat = #arg_val;
-        //    )*
-        //    #(#stmts)*
-        //})();
-        //let __result = async {
-        //};
-        //(async || {
-        //    #(#stmts)*
-        //})();
-        //async {
-        //    #(#stmts)*
-        //};
-        let __result = async {
+        // ref - THANKS:
+        // - https://www.reddit.com/r/rust/comments/w6sgqu/comment/ihgtglm/
+        // - https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=3cd70b7a6244f6aa1a5de4cf7a2782f7
+        // - https://www.reddit.com/r/rust/comments/w6sgqu/blog_asynchronous_closures_in_rust_box_and_pin/
+        // - https://www.bitfalter.com/async-closures
+        let __f = || async move {
+            #move_self
+            #(
+                let #arg_pat = #arg_val;
+            )*
             #(#stmts)*
         };
-        //let __result = async #ret {
-        //    return ();
-        //};
-        //let __result = (|| async #ret {
-        //    //#move_self
-        //    //#(
-        //    //    let #arg_pat = #arg_val;
-        //    //)*
-        //    #(#stmts)*
-        //    return ();
-        //})();
+        let __result = __f().await;
         core::mem::forget(__guard);
-        //__result
-        //return __result.await;
-        //__result
+        __result
     }));
 
     } else {
