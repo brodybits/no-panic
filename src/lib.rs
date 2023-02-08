@@ -146,12 +146,12 @@ pub fn no_panic(args: TokenStream, input: TokenStream) -> TokenStream {
 fn parse(args: TokenStream2, input: TokenStream2) -> Result<ItemFn> {
     let function: ItemFn = syn::parse2(input)?;
     let _: Nothing = syn::parse2::<Nothing>(args)?;
-    if function.sig.asyncness.is_some() {
-        return Err(Error::new(
-            Span::call_site(),
-            "no_panic attribute on async fn is not supported",
-        ));
-    }
+    //if function.sig.asyncness.is_some() {
+    //    return Err(Error::new(
+    //        Span::call_site(),
+    //        "no_panic attribute on async fn is not supported",
+    //    ));
+    //}
     Ok(function)
 }
 
@@ -186,6 +186,8 @@ fn expand_no_panic(mut function: ItemFn) -> TokenStream2 {
         }
     }
 
+    let is_async = function.sig.asyncness.is_some();
+
     let has_inline = function
         .attrs
         .iter()
@@ -196,7 +198,9 @@ fn expand_no_panic(mut function: ItemFn) -> TokenStream2 {
     }
 
     let ret = match &function.sig.output {
-        ReturnType::Default => quote!(-> ()),
+        //ReturnType::Default => quote!(-> ()),
+        //ReturnType::Default => None,
+        ReturnType::Default => quote!(),
         output @ ReturnType::Type(..) => quote!(#output),
     };
     let stmts = function.block.stmts;
@@ -204,6 +208,17 @@ fn expand_no_panic(mut function: ItemFn) -> TokenStream2 {
         "\n\nERROR[no-panic]: detected panic in function `{}`\n",
         function.sig.ident,
     );
+
+    let sync_move = if is_async { quote!() } else { quote!(move) };
+    // ref - THANKS:
+    // - https://www.reddit.com/r/rust/comments/w6sgqu/comment/ihgtglm/
+    // - https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=3cd70b7a6244f6aa1a5de4cf7a2782f7
+    // - https://www.reddit.com/r/rust/comments/w6sgqu/blog_asynchronous_closures_in_rust_box_and_pin/
+    // - https://www.bitfalter.com/async-closures
+    let async_move = if is_async { quote!(async move) } else { quote!() };
+
+    let __f_call = if is_async { quote!(__f().await) } else { quote!(__f()) };;
+
     function.block = Box::new(parse_quote!({
         struct __NoPanic;
         extern "C" {
@@ -218,13 +233,14 @@ fn expand_no_panic(mut function: ItemFn) -> TokenStream2 {
             }
         }
         let __guard = __NoPanic;
-        let __result = (move || #ret {
+        let mut __f = #sync_move || #async_move #ret {
             #move_self
             #(
                 let #arg_pat = #arg_val;
             )*
             #(#stmts)*
-        })();
+        };
+        let __result = #__f_call;
         core::mem::forget(__guard);
         __result
     }));
