@@ -235,9 +235,9 @@ fn expand_no_panic(mut function: ItemFn) -> TokenStream2 {
         //async {
         //    #(#stmts)*
         //};
-        let __result = async {
-            #(#stmts)*
-        };
+        //let __result = async {
+        //    #(#stmts)*
+        //};
         //let __result = async #ret {
         //    return ();
         //};
@@ -249,11 +249,27 @@ fn expand_no_panic(mut function: ItemFn) -> TokenStream2 {
         //    #(#stmts)*
         //    return ();
         //})();
+        //let __result = async {
+        //    #(#stmts)*
+        //};
+
+        async fn f() #ret {
+            #move_self
+            #(
+                let #arg_pat = #arg_val;
+            )*
+            #(#stmts)*
+        }
+
+        let __result = f();
+
         core::mem::forget(__guard);
         //__result
         //return __result.await;
         //__result
     }));
+
+    //panic!(format!("*** *** {:?}", quote!(#function)));
 
     } else {
     function.block = Box::new(parse_quote!({
