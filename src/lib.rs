@@ -198,7 +198,9 @@ fn expand_no_panic(mut function: ItemFn) -> TokenStream2 {
     }
 
     let ret = match &function.sig.output {
-        ReturnType::Default => quote!(-> ()),
+        //ReturnType::Default => quote!(-> ()),
+        //ReturnType::Default => None,
+        ReturnType::Default => quote!(),
         output @ ReturnType::Type(..) => quote!(#output),
     };
     let stmts = function.block.stmts;
@@ -208,6 +210,11 @@ fn expand_no_panic(mut function: ItemFn) -> TokenStream2 {
     );
 
     let sync_move = if is_async { quote!() } else { quote!(move) };
+    // ref - THANKS:
+    // - https://www.reddit.com/r/rust/comments/w6sgqu/comment/ihgtglm/
+    // - https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=3cd70b7a6244f6aa1a5de4cf7a2782f7
+    // - https://www.reddit.com/r/rust/comments/w6sgqu/blog_asynchronous_closures_in_rust_box_and_pin/
+    // - https://www.bitfalter.com/async-closures
     let async_move = if is_async { quote!(async move) } else { quote!() };
 
     let __f_call = if is_async { quote!(__f().await) } else { quote!(__f()) };;
@@ -233,7 +240,7 @@ fn expand_no_panic(mut function: ItemFn) -> TokenStream2 {
         // - https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=3cd70b7a6244f6aa1a5de4cf7a2782f7
         // - https://www.reddit.com/r/rust/comments/w6sgqu/blog_asynchronous_closures_in_rust_box_and_pin/
         // - https://www.bitfalter.com/async-closures
-        let mut __f = || #async_move {
+        let mut __f = #sync_move || #async_move #ret {
             #move_self
             #(
                 let #arg_pat = #arg_val;
@@ -260,7 +267,7 @@ fn expand_no_panic(mut function: ItemFn) -> TokenStream2 {
             }
         }
         let __guard = __NoPanic;
-        let mut __f = #sync_move || #ret {
+        let mut __f = #sync_move || #async_move #ret {
             #move_self
             #(
                 let #arg_pat = #arg_val;
