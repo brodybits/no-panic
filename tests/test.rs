@@ -3,18 +3,10 @@ mod compiletest;
 
 #[rustversion::attr(not(since(1.67.0)), ignore)]
 #[test]
-fn runs() {
+fn ui() {
     let t = trybuild::TestCases::new();
-    t.pass("tests/runs/*.rs");
+    t.compile_fail("tests/ui/*.rs");
 }
-
-//#[rustversion::attr(not(since(1.67.0)), ignore)]
-//#[test]
-//fn ui() {
-//    let t = trybuild::TestCases::new();
-//    t.pass("tests/ui/a.rs");
-//    t.compile_fail("tests/ui/*.rs");
-//}
 
 assert_no_panic! {
     mod test_readme {
