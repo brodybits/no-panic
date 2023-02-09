@@ -200,14 +200,16 @@ assert_no_panic! {
             g().await;
         }
 
+        #[no_panic]
         async fn g() {}
 
         fn main() {}
     }
 
-    mod test_async_await_xxx_xxx {
+    mod test_async_await_return_values {
         pub struct S;
 
+        #[no_panic]
         async fn f1() -> i32 { 123 }
 
         #[no_panic]
