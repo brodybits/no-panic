@@ -194,6 +194,17 @@ assert_no_panic! {
         fn main() {}
     }
 
+    mod test_async_fn {
+        #[no_panic]
+        async fn f() {
+            g().await;
+        }
+
+        async fn g() {}
+
+        fn main() {}
+    }
+
     mod test_async_await_xxx_xxx {
         pub struct S;
 
