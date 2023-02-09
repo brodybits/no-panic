@@ -202,20 +202,20 @@ assert_no_panic! {
         fn main() {}
     }
 
-    mod test_async_await {
+    mod test_async_await_xxx_xxx {
         pub struct S;
 
-        async fn f1() {}
+        async fn f1() -> i32 { 123 }
 
         #[no_panic]
-        async fn f2() {
+        async fn f2() -> i32 {
             f1().await
         }
 
         impl S {
             #[no_panic]
-            async fn f(&mut self) {
-                f1().await;
+            async fn f(&mut self) -> i32 {
+                f2().await
             }
         }
 

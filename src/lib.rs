@@ -203,6 +203,7 @@ fn expand_no_panic(mut function: ItemFn) -> TokenStream2 {
         ReturnType::Default => quote!(),
         output @ ReturnType::Type(..) => quote!(#output),
     };
+    let retx = if is_async { quote!() } else { ret };
     let stmts = function.block.stmts;
     let message = format!(
         "\n\nERROR[no-panic]: detected panic in function `{}`\n",
@@ -233,7 +234,7 @@ fn expand_no_panic(mut function: ItemFn) -> TokenStream2 {
             }
         }
         let __guard = __NoPanic;
-        let mut __f = #sync_move || #async_move #ret {
+        let mut __f = #sync_move || #async_move #retx {
             #move_self
             #(
                 let #arg_pat = #arg_val;
