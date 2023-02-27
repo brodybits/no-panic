@@ -1,7 +1,6 @@
 #[macro_use]
 mod compiletest;
 
-#[rustversion::attr(not(nightly), ignore)]
 #[test]
 fn ui() {
     let t = trybuild::TestCases::new();
@@ -209,6 +208,39 @@ assert_no_panic! {
         #[no_panic]
         pub fn f() -> io::Result<impl io::Write> {
             Ok(Vec::new())
+        }
+
+        fn main() {}
+    }
+
+    mod test_async_fn {
+        #[no_panic]
+        async fn f() {
+            g().await;
+        }
+
+        #[no_panic]
+        async fn g() {}
+
+        fn main() {}
+    }
+
+    mod test_async_await_return_values {
+        pub struct S;
+
+        #[no_panic]
+        async fn f1() -> i32 { 123 }
+
+        #[no_panic]
+        async fn f2() -> i32 {
+            f1().await
+        }
+
+        impl S {
+            #[no_panic]
+            async fn f(&mut self) -> i32 {
+                f2().await
+            }
         }
 
         fn main() {}
